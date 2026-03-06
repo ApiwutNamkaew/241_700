@@ -3,6 +3,9 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql2/promise');
 const { createConnection } = require('mysql2');
 const app = express();
+const cors = require('cors');
+
+app.use(cors());
 
 app.use(bodyParser.json());
 
@@ -50,69 +53,16 @@ app.post('/users', async (req, res) => {
     try {
         let user = req.body;
         const results = await conn.query('INSERT INTO users SET ?', user)
-        console.log('results:', results)
         res.json({
             message: 'User created successfully',
             data: results[0]
         });
-    } catch (error) {
-        console.error('Error inserting user:', error);
-        res.status(500).json({ message: 'Internal Server Error' });
+    } catch (error){
+        console.error('Error connecting to the database:', error);
+        res.status(500).json({ error: 'Internal Server Error' })
     }
 })
 
-//path = GET/users/:id สำหรับดึงข้อมู user ตาม id
-app.get('/users/:id', async (req, res) => {
-    try {
-        let id = req.params.id;
-        const results = await conn.query('SELECT * FROM users WHERE id = ?', id);
-        if (results[0].length === 0) {
-            throw { statusCode: 404, message: 'User not found' };
-        }
-        res.json([0][0]);
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        let statusCode = error.statusCode || 500;
-        res.status(statusCode).json({
-            message: error.message || 'Error fetching user'
-        });
-    }
-})
-
-//path = PUT/users/:id สำหรับอัพเดตข้อมูล user ตาม id
-app.put('/users/:id', async (req, res) => {
-    try{
-        let id = req.params.id;
-        let updataUser = req.body;
-        const results = await conn.query('UPDATE users SET ? WHERE id = ?', [updataUser,id]);
-        rea.json({
-            message: 'User updated successfully',
-            data: results[0]
-        });
-    }catch (error) {
-        console.error('Error updated successfully',error);
-        res.status(500).json({ message: 'Error updating user'});
-    }
-})
-
-//path = DELETE/users/:id สำหรับลบข้อมูล user ตาม id
-app.delete('/users/:id', async (req, res) => {
-    try{
-        let id = req.params.id;
-        const results = await conn.query('DELETE FROM users WHERE id = ?', id);
-        rea.json({
-            message: 'User deleted successfully',
-            data: results[0]
-        });
-    }catch (error) {
-        console.error('Error deleting user',error);
-        res.status(500).json({ message: 'Error deleting user'});
-    }
-})
-
-
-
-/** 
 app.get('/testdb-new', async (req, res) => {
     try {
 
@@ -124,18 +74,40 @@ app.get('/testdb-new', async (req, res) => {
     }
 
 });
-*/
 
-
-app.put('/users/:id', async (req, res) => {
-    try {
+app.get('/users/:id', async (req, res) => {
+    try{
         let id = req.params.id;
-        let updataUser = req.body;
-        const results = await conn.query('UP')
+        const results = await conn.query('SELECT * FROM users WHERE id = ?', id);
+        if (results[0].length === 0){
+            throw { statusCode: 404, message: 'User not found'};
+        }
+        res.json([0][0]);
+    }catch (error){
+        console.error('Error fetching user:', error);
+        let statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            message: error.message || 'Error fetching user'
+        });
     }
 })
 
-/**
+app.put('/users/:id', async (req, res)=>{
+    try{
+        let id = req.params.id;
+        let updataUser = req.body;
+        const results = await conn.query('UP');
+    }catch (error) {
+        console.error('Error updating user:', error.message);
+        let statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            message: 'Error updating user',
+            error: error.message
+        });
+    }
+})
+
+/** 
 let users = [];
 let counter = 1;
 */
@@ -177,7 +149,7 @@ app.patch('/user/:id', (req, res) => {
     //users update
     users[selectedIndex].firstname = updateUser.firstname || users[selectedIndex].firstname;
     users[selectedIndex].lastname = updateUser.lastname || users[selectedIndex].lastname;
-   
+    
     if (updateUser.firstname) {
         users[selectedIndex].firstname = updateUser.firstname;
     }if (updateUser.lastname) {
