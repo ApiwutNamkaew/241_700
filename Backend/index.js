@@ -48,18 +48,53 @@ app.get('/users', async (req, res) => {
     res.json(results[0]);
 })
 
+const validateData = (userData) => {
+    let error = [];
+    if (!userData.firstName){
+        error.push('กรุณากรอกชื่อ');
+    }
+    if (!userData.lastName){
+        error.push('กรุณากรอกนามสกุล');
+    }
+    if (!userData.age){
+        error.push('กรุณากรอกอายุ');
+    }
+    if (!userData.gender){
+        error.push('กรุณาเลือกเพศ');
+    }
+    if (!userData.interests){
+        error.push('กรุณาเลือกงานอดิเรก');
+    }
+    if (!userData.description){
+        error.push('กรุณากรอกคำอธิบาย');
+    }
+    return error;
+}
+
 //path = POST /users สำหรับเพิ่ม user ใหม่
 app.post('/users', async (req, res) => {
     try {
         let user = req.body;
-        const results = await conn.query('INSERT INTO users SET ?', user)
+        const errors = validateData(user);
+        if (errors.length > 0) {
+            throw {
+                message: 'กรุณากรอกข้อมูลให่ครบถ้วน',
+                errors: errors
+            }
+        }    
+        const results = await conn.query('INSERT INTO users SET ?', user);
         res.json({
             message: 'User created successfully',
             data: results[0]
         });
     } catch (error){
+        const errorMessage = error.message || 'Error adding user';
+        const errors = error.errors || [];
         console.error('Error connecting to the database:', error);
-        res.status(500).json({ error: 'Internal Server Error' })
+        res.status(500).json({ 
+            message: errorMessage,
+            errors: errors
+        });
     }
 })
 
